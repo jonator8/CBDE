@@ -146,25 +146,11 @@ public class GroupBy extends Configured implements Tool {
     //Set the MapReduce class
     job.setJarByClass(GroupBy.class);
     //Set the job name
-    job.setJobName("Projection");
+    job.setJobName("Group By");
     //Create an scan object
     Scan scan = new Scan();
     //Set the columns to scan and keep header to project
-    String header = "";
-    for (int i = 2; i < args.length; i++) {
-      String[] familyColumn = new String[2];
-      if (!args[i].contains(":")) {
-        //If only the column name is provided, it is assumed that both family and column names are the same
-        familyColumn[0] = args[i];
-        familyColumn[1] = args[i];
-      } else {
-        //Otherwise, we extract family and column names from the provided argument "family:column"
-        familyColumn = args[i].split(":");
-      }
-
-      scan.addColumn(familyColumn[0].getBytes(), familyColumn[1].getBytes());
-      header = header + "," + args[i];
-    }
+    String header = args[2] + "," + args[3];
     job.getConfiguration().setStrings("attributes", header);
     //Set the Map and Reduce function
     TableMapReduceUtil.initTableMapperJob(inputTable, scan, Mapper.class, Text.class, Text.class, job);
@@ -179,36 +165,17 @@ public class GroupBy extends Configured implements Tool {
 
     public void map(ImmutableBytesWritable rowMetadata, Result values, Context context)
         throws IOException, InterruptedException {
-      String tuple = "";
-      String rowId = new String(rowMetadata.get(), "US-ASCII");
       String[] attributes = context.getConfiguration().getStrings("attributes", "empty");
-
-      String[] firstFamilyColumn = new String[2];
-      if (!attributes[0].contains(":")) {
-        //If only the column name is provided, it is assumed that both family and column names are the same
-        firstFamilyColumn[0] = attributes[0];
-        firstFamilyColumn[1] = attributes[0];
-      } else {
-        firstFamilyColumn = attributes[0].split(":");
+      //Attributes introduced by the user
+      String aggregateAttribute = attributes[0];
+      String groupByAttribute = attributes[1];
+      //Values of the attributes introduced by the user
+      String aggregateValue = new String(values.getValue(aggregateAttribute.getBytes(), aggregateAttribute.getBytes()));
+      String groupByValue = new String(values.getValue(groupByAttribute.getBytes(), groupByAttribute.getBytes()));
+      //Write pair key-value
+      if (!aggregateValue.isEmpty() && !groupByValue.isEmpty()) {
+        context.write(new Text(groupByValue), new Text(aggregateValue)); //value, key
       }
-      tuple = new String(values.getValue(firstFamilyColumn[0].getBytes(), firstFamilyColumn[1].getBytes()));
-
-      for (int i = 1; i < attributes.length; i++) {
-
-        String[] familyColumn = new String[2];
-        if (!attributes[i].contains(":")) {
-          //If only the column name is provided, it is assumed that both family and column names are the same
-          familyColumn[0] = attributes[i];
-          familyColumn[1] = attributes[i];
-        } else {
-          //Otherwise, we extract family and column names from the provided argument "family:column"
-          familyColumn = attributes[i].split(":");
-        }
-
-        tuple = tuple + ";" + new String(values.getValue(familyColumn[0].getBytes(), familyColumn[1].getBytes()));
-      }
-
-      context.write(new Text(tuple), new Text(rowId));
     }
   }
 
@@ -216,28 +183,20 @@ public class GroupBy extends Configured implements Tool {
   public static class Reducer extends TableReducer<Text, Text, Text> {
 
     public void reduce(Text key, Iterable<Text> inputList, Context context) throws IOException, InterruptedException {
-      Text outputKey = inputList.iterator().next();
-
+      //Compute aggregation
+      int total = 0;
+      for (Text val : inputList) {
+        total += Integer.parseInt(val.toString());
+      }
       // Create a tuple for the output table
-      Put put = new Put(outputKey.getBytes());
+      Put put = new Put(key.getBytes());
       //Set the values for the columns
       String[] attributes = context.getConfiguration().getStrings("attributes", "empty");
-      String[] values = key.toString().split(";");
-      for (int i = 0; i < attributes.length; i++) {
-        String[] familyColumn = new String[2];
-        if (!attributes[i].contains(":")) {
-          //If only the column name is provided, it is assumed that both family and column names are the same
-          familyColumn[0] = attributes[i];
-          familyColumn[1] = attributes[i];
-        } else {
-          //Otherwise, we extract family and column names from the provided argument "family:column"
-          familyColumn = attributes[i].split(":");
-        }
-
-        put.add(familyColumn[0].getBytes(), familyColumn[1].getBytes(), values[i].getBytes());
-      }
+      String aggregateAttribute = attributes[0];
+      String groupByAttribute = attributes[1];
+      put.add(aggregateAttribute.getBytes(), aggregateAttribute.getBytes(), (String.valueOf(total)).getBytes());
       // Put the tuple in the output table
-      context.write(outputKey, put);
+      context.write(key, put);
     }
 
   }
