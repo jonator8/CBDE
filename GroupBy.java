@@ -25,7 +25,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer.Context;
 
-public class Projection extends Configured implements Tool {
+public class GroupBy extends Configured implements Tool {
   private static String inputTable;
   private static String outputTable;
 
@@ -63,8 +63,8 @@ public class Projection extends Configured implements Tool {
   */
 
   public static void main(String[] args) throws Exception {
-    if (args.length < 3) {
-      System.err.println("Parameters missing: 'inputTable outputTable [family:]attribute*'");
+    if (args.length != 4) {
+      System.err.println("Parameters missing: 'inputTable outputTable aggregateAttribute groupByAttribute'");
       System.exit(1);
     }
     inputTable = args[0];
@@ -72,7 +72,7 @@ public class Projection extends Configured implements Tool {
 
     int tablesRight = checkIOTables(args);
     if (tablesRight == 0) {
-      int ret = ToolRunner.run(new Projection(), args);
+      int ret = ToolRunner.run(new GroupBy(), args);
       System.exit(ret);
     } else {
       System.exit(tablesRight);
@@ -88,8 +88,6 @@ public class Projection extends Configured implements Tool {
 
     // With an HBase administrator we check if the input table exists
     if (hba.tableExists(inputTable)) {
-      //System.err.println("Input table does not exist");
-      //return 2;
       hba.disableTable(inputTable);
       hba.deleteTable(inputTable);
 
@@ -103,40 +101,39 @@ public class Projection extends Configured implements Tool {
 
     // Check if the output table exists
     if (hba.tableExists(outputTable)) {
-      //System.err.println("Output table already exists");
-      //return 3;
       hba.disableTable(outputTable);
       hba.deleteTable(outputTable);
     }
     // Create the columns of the output table
     HTableDescriptor htdOutput = new HTableDescriptor(outputTable.getBytes());
-    //Add columns to the new table
-    for (int i = 2; i < args.length; i++) {
-      String[] familyColumn = new String[2];
+    htdOutput.addFamily(new HColumnDescriptor(args[2])); //aggregateAttribute
+    hba.createTable(htdOutput);
 
-      if (!args[i].contains(":")) {
-        //If only the column name is provided, it is assumed that both family and column names are the same
-        System.out.println("Only column name is provided! Assuming that the family and column names are the same!");
-        familyColumn[0] = args[i];
-        familyColumn[1] = args[i];
-      } else {
-        //Otherwise, we extract family and column names from the provided argument "family:column"
-        familyColumn = args[i].split(":");
-      }
-
-      htdOutput.addFamily(new HColumnDescriptor(familyColumn[0]));
-    }
     // If you want to insert data do it here
     // -- Inserts
     // -- Inserts
+    HTable input = new HTable(config, inputTable);
+    //Row1
     Put put = new Put(Bytes.toBytes("key1"));
     put.add(Bytes.toBytes("a"), Bytes.toBytes("a"), Bytes.toBytes("1"));
-    put.add(Bytes.toBytes("b"), Bytes.toBytes("b"), Bytes.toBytes("2"));
-    HTable input = new HTable(config, inputTable);
+    put.add(Bytes.toBytes("b"), Bytes.toBytes("b"), Bytes.toBytes("100"));
+    input.put(put);
+    //Row2
+    put = new Put(Bytes.toBytes("key2"));
+    put.add(Bytes.toBytes("a"), Bytes.toBytes("a"), Bytes.toBytes("1"));
+    put.add(Bytes.toBytes("b"), Bytes.toBytes("b"), Bytes.toBytes("100"));
+    input.put(put);
+    //Row3
+    put = new Put(Bytes.toBytes("key3"));
+    put.add(Bytes.toBytes("a"), Bytes.toBytes("a"), Bytes.toBytes("2"));
+    put.add(Bytes.toBytes("b"), Bytes.toBytes("b"), Bytes.toBytes("100"));
+    input.put(put);
+    //Row4
+    put = new Put(Bytes.toBytes("key4"));
+    put.add(Bytes.toBytes("a"), Bytes.toBytes("a"), Bytes.toBytes("2"));
+    put.add(Bytes.toBytes("b"), Bytes.toBytes("b"), Bytes.toBytes("100"));
     input.put(put);
 
-    //Create the new output table
-    hba.createTable(htdOutput);
     return 0;
   }
 
@@ -147,7 +144,7 @@ public class Projection extends Configured implements Tool {
     //Retrive the configuration
     Job job = new Job(HBaseConfiguration.create());
     //Set the MapReduce class
-    job.setJarByClass(Projection.class);
+    job.setJarByClass(GroupBy.class);
     //Set the job name
     job.setJobName("Projection");
     //Create an scan object
