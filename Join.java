@@ -120,8 +120,8 @@ public class Join extends Configured implements Tool {
        Normally, MapReduce tasks attack an existing table (not created on the fly) and
        they store the result in a new table. */
     if (hba.tableExists(outputTable)) {
-      hba.disableTable(inputTable2);
-      hba.deleteTable(inputTable2);
+      hba.disableTable(outputTable);
+      hba.deleteTable(outputTable);
     }
     // If you want to insert data through the API, do it here
     // -- Inserts
@@ -229,7 +229,7 @@ public class Join extends Configured implements Tool {
      - Context context: The object where to store all the key-values generated (i.e., the map output) */
 
   public static class Mapper extends TableMapper<Text, Text> {
-    
+
     public static final int HASH = 10;
 
     public void map(ImmutableBytesWritable rowMetadata, Result values, Context context) throws IOException, InterruptedException {
@@ -332,7 +332,7 @@ public class Join extends Configured implements Tool {
               for (k = 1; k < iAttributes.length; k++) {
                 attribute_value = iAttributes[k].split(":");
                 //If the column name is the correct, store the value
-                if (attribute_value[1].equals(leftAttribute[0])) {
+                if (attribute_value[1].equals(rightAttribute[0])) {
                   rightValue = attribute_value[2];
                 }
                 put.addColumn(attribute_value[0].getBytes(), attribute_value[1].getBytes(),
