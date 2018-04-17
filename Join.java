@@ -288,6 +288,8 @@ public class Join extends Configured implements Tool {
       String[] rightAttribute = context.getConfiguration().getStrings("RightAttribute", "empty");
       String[] eAttributes, iAttributes;
       String[] attribute_value;
+      String leftValue = "";
+      String rightValue = "";
 
       //All tuples with the same hash value are stored in a vector
       Vector<String> tuples = new Vector<String>();
@@ -316,17 +318,27 @@ public class Join extends Configured implements Tool {
               //Set the values for the columns of the external table
               for (k = 1; k < eAttributes.length; k++) {
                 attribute_value = eAttributes[k].split(":");
+                //If the column name is the correct, store the value
+                if (attribute_value[1].equals(leftAttribute[0])) {
+                  leftValue = attribute_value[2];
+                }
                 put.addColumn(attribute_value[0].getBytes(), attribute_value[1].getBytes(),
                     attribute_value[2].getBytes());
               }
               //Set the values for the columns of the internal table
               for (k = 1; k < iAttributes.length; k++) {
                 attribute_value = iAttributes[k].split(":");
+                //If the column name is the correct, store the value
+                if (attribute_value[1].equals(leftAttribute[0])) {
+                  rightValue = attribute_value[2];
+                }
                 put.addColumn(attribute_value[0].getBytes(), attribute_value[1].getBytes(),
                     attribute_value[2].getBytes());
               }
               // Put the tuple in the output table through the context object
-              context.write(new Text(outputKey), put);
+              if (!leftValue.isEmpty() && !rightValue.isEmpty() && leftValue.equals(rightValue)) {
+                context.write(new Text(outputKey), put);
+              }
             }
           }
         }
