@@ -252,24 +252,33 @@ public class Join extends Configured implements Tool {
 
       KeyValue[] attributes = values.raw();
       for (i = 0; i < attributes.length; i++) {
-        tuple = tuple + ";" + new String(attributes[i].getFamily()) + ":" + new String(attributes[i].getQualifier())
-            + ":" + new String(attributes[i].getValue());
-      }
 
-      //Is this key external (e.g., from the external table)?
-      if (tableName.equalsIgnoreCase(external[0])) {
-        //This writes a key-value pair to the context object
-        //If it is external, it gets as key a hash value and it is written only once in the context object
-        context.write(new Text(Integer.toString(Double.valueOf(Math.random() * hash).intValue())), new Text(tuple));
+
+            //Is this key external (e.g., from the external table)?
+            if (tableName.equalsIgnoreCase(leftTable[0])) {
+              //This writes a key-value pair to the context object
+              //If it is external, it gets as key a hash value and it is written only once in the context object
+              if(leftAttribute.equals(new String(attributes[i].getValue())) {
+                tuple = tuple + ";" + new String(attributes[i].getFamily()) + ":" + new String(attributes[i].getQualifier())
+                    + ":" + new String(attributes[i].getValue());
+              }
+              //context.write(new Text(Integer.toString(Double.valueOf(Math.random() * hash).intValue())), new Text(tuple));
+            }
+            //Is this key internal (e.g., from the internal table)?
+            //If it is internal, it is written to the context object many times, each time having as key one of the potential hash values
+            if (tableName.equalsIgnoreCase(rightTable[0])) {
+
+              if(rightAttribute.equals(new String(attributes[i].getValue())) {
+                tuple = tuple + ";" + new String(attributes[i].getFamily()) + ":" + new String(attributes[i].getQualifier())
+                    + ":" + new String(attributes[i].getValue());
+              }
+              /*for (i = 0; i < hash; i++) {
+                context.write(new Text(Integer.toString(i)), new Text(tuple));
+              }*/
+            }
+          }
+
       }
-      //Is this key internal (e.g., from the internal table)?
-      //If it is internal, it is written to the context object many times, each time having as key one of the potential hash values
-      if (tableName.equalsIgnoreCase(internal[0])) {
-        for (i = 0; i < hash; i++) {
-          context.write(new Text(Integer.toString(i)), new Text(tuple));
-        }
-      }
-    }
   }
 
   //================================================================== Reducer
