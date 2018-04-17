@@ -42,27 +42,27 @@ public class Join extends Configured implements Tool {
   //=================================================================== Main
   /*
       Explanation: Assume we want to do the cartesian product of tuples stored in two HBase tables (inputTable1 and inputTable2).
-  
+
       First, the main method checks the call parameters. There must be 4:
       1.- First (external) HBase input table where to read data from (it must have been created beforehand, as we will see later)
   	2.- Second (internal) HBase input table where to read data from (it must have been created beforehand, as we will see later)
       4.- The HBase output table (it will be created, as we will see later)
       5.- A random value
-  
+
       Assume a call like this:
-  
+
       yarn jar myJarFile.jar CartesianProduct Username_InputTable1 Username_InputTable2 Username_OutputTable 10
-  
+
       Assume now the following HBase tables:
-  
+
   	- The Username_InputTable1 HBase table containing the following data:
   		'key1', 'AAA'
   		'key2', 'BBB'
-  
+
   	- The Username_InputTable2 HBase table containing the following data:
   		'key3', 'CCC'
   		'key4', 'DDD'
-  
+
       As we will see later in the map and reduce methods, what we want to do is to join all tuples from Username_InputTable1 with all the tuples from Username_InputTable2 (but those from the same table must not be joined).
       Next, the main calls the checkIOTables method, which connects with HBase and handles it.
       Finally, the MapReduce task is run (and the run method is called).
@@ -149,7 +149,7 @@ public class Join extends Configured implements Tool {
       put = new Put(Bytes.toBytes("key4"));
       put.add(Bytes.toBytes("f2"), Bytes.toBytes("value"), Bytes.toBytes("DDD"));
       input2.put(put);
-    
+
       //If you do it through the HBase Shell, this is equivalent to:
       //put 'Username_InputTable1', 'key1', 'Family:Attribute', 'Value'
     // -- Inserts
@@ -182,15 +182,15 @@ public class Join extends Configured implements Tool {
     //Create a new MapReduce configuration object.
     Job job = new Job(HBaseConfiguration.create());
     //Set the MapReduce class
-    job.setJarByClass(CartesianProduct.class);
+    job.setJarByClass(Join.class);
     //Set the job name
     job.setJobName("Join");
     // To pass parameters to the mapper and reducer we must use the setStrings of the Configuration object
     // We pass the names of two input tables as External and Internal tables of the Cartesian product, and a hash random value.
-    job.getConfiguration().setStrings("External", inputTable1);
-    job.getConfiguration().setStrings("Internal", inputTable2);
-    job.getConfiguration().setInt("Hash", Integer.parseInt(args[3]));
-    System.out.println("Hash = " + args[3]);
+    job.getConfiguration().setStrings("LeftTable", inputTable1);
+    job.getConfiguration().setStrings("RightTable", inputTable2);
+    job.getConfiguration().setStrings("LeftAttribute", args[3]);
+    job.getConfiguration().setStrings("RightAttribute", args[4]);
 
     /* Set the Map and Reduce function:
        These are special mapper and reducers, which are prepared to read and store data on HBase tables
@@ -232,15 +232,14 @@ public class Join extends Configured implements Tool {
 
     public void map(ImmutableBytesWritable rowMetadata, Result values, Context context)
         throws IOException, InterruptedException {
-      int i;
-      int hash = context.getConfiguration().getInt("Hash", 0);
 
-      String[] external = context.getConfiguration().getStrings("External", "Default");
-      String[] internal = context.getConfiguration().getStrings("Internal", "Default");
+      String[] leftTable = context.getConfiguration().getStrings("LeftTable", "Default");
+      String[] rightTable = context.getConfiguration().getStrings("RightTable", "Default");
+      String[] leftAttribute = context.getConfiguration().getStrings("LeftAttribute", "empty");
+      String[] rightAttribute = context.getConfiguration().getStrings("RightAttribute", "empty");
 
       // From the context object we obtain the input TableSplit this row belongs to
       TableSplit currentSplit = (TableSplit) context.getInputSplit();
-
       /*
         From the TableSplit object, we can further extract the name of the table that the split belongs to.
         We use the extracted table name to distinguish between external and internal tables as explained below.
