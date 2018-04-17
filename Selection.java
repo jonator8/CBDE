@@ -28,7 +28,6 @@ import org.apache.hadoop.mapreduce.Reducer.Context;
 public class Selection extends Configured implements Tool {
   private static String inputTable;
   private static String outputTable;
-  private static String searchValue;
 
 
   //=================================================================== Main
@@ -190,6 +189,7 @@ public class Selection extends Configured implements Tool {
       String[] attributes = values.raw();
       String[] search = context.getConfiguration().getStrings("attributes", "empty");
 
+      String value = search[search.length-1];
       boolean first = true;
       for (int i = 0; i < attributes.length; i++) {
 
@@ -203,7 +203,7 @@ public class Selection extends Configured implements Tool {
           familyColumn = attributes[i].split(":");
         }
 
-        if () {
+        if (attributes[i].equals(search[0]) && value.equals(new String(values.getValue(familyColumn[0].getBytes(), familyColumn[1].getBytes())))) {
           if (first) {
             tuple = new String(values.getValue(familyColumn[0].getBytes(), familyColumn[1].getBytes()));
             first = false;
