@@ -32,7 +32,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer.Context;
 
-public class CartesianProduct extends Configured implements Tool {
+public class Join extends Configured implements Tool {
 
   // These are three global variables, which coincide with the three parameters in the call
   public static String inputTable1;
@@ -184,7 +184,7 @@ public class CartesianProduct extends Configured implements Tool {
     //Set the MapReduce class
     job.setJarByClass(CartesianProduct.class);
     //Set the job name
-    job.setJobName("CartesianProduct");
+    job.setJobName("Join");
     // To pass parameters to the mapper and reducer we must use the setStrings of the Configuration object
     // We pass the names of two input tables as External and Internal tables of the Cartesian product, and a hash random value.
     job.getConfiguration().setStrings("External", inputTable1);
