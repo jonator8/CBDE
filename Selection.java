@@ -168,12 +168,13 @@ public class Selection extends Configured implements Tool {
       }
 
       scan.addColumn(familyColumn[0].getBytes(), familyColumn[1].getBytes());
-      header = header + "," + args[i];
+      header = header + "," + args[i] ;
     }
     job.getConfiguration().setStrings("attributes", header);
+    job.getConfiguration().setStrings("searchValue", searchValue);
     //Set the Map and Reduce function
     TableMapReduceUtil.initTableMapperJob(inputTable, scan, Mapper.class, Text.class, Text.class, job);
-    TableMapReduceUtil.initTableReducerJob(outputTable, Reducer.class, job);
+    //TableMapReduceUtil.initTableReducerJob(outputTable, Reducer.class, job);
 
     boolean success = job.waitForCompletion(true);
     return success ? 0 : 4;
@@ -186,8 +187,8 @@ public class Selection extends Configured implements Tool {
         throws IOException, InterruptedException {
       String tuple = "";
       String rowId = new String(rowMetadata.get(), "US-ASCII");
-      String[] attributes = values.raw();
-      String[] search = context.getConfiguration().getStrings("attributes", "empty");
+      String[] searchValue = context.getConfiguration().getStrings("searchValue", "empty");
+      String[] attributes = context.getConfiguration().getStrings("attributes", "empty");
 
       String value = search[search.length-1];
       boolean first = true;
@@ -203,7 +204,7 @@ public class Selection extends Configured implements Tool {
           familyColumn = attributes[i].split(":");
         }
 
-        if (attributes[i].equals(search[0]) && value.equals(new String(values.getValue(familyColumn[0].getBytes(), familyColumn[1].getBytes())))) {
+        if (searchValue[0].equals(new String(values.getValue(familyColumn[0].getBytes(), familyColumn[1].getBytes())))) {
           if (first) {
             tuple = new String(values.getValue(familyColumn[0].getBytes(), familyColumn[1].getBytes()));
             first = false;
