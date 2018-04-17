@@ -30,37 +30,6 @@ public class GroupBy extends Configured implements Tool {
   private static String outputTable;
 
   //=================================================================== Main
-  /*
-       Explanation: This MapReduce job either requires at input both family and column name defined (family:column),
-  	or if only the column name is provided, it assumes that both family and column name are the same.
-       For example, for a table with columns a, b and c, it would assume three families (a, b and c).
-
-       This MapReduce takes three parameters:
-       - Input HBase table from where to read data.
-       - Output HBase table where to store data.
-       - A list of [family:]columns to project.
-
-  	We distinguish two following cases:
-  	1) 	For example, assume the following HBase table UsernameInput (the corresponding shell create statement follows):
-  		create 'UsernameInput', 'a', 'b' -- It contains two families: a and b
-  		put 'UsernameInput', 'key1', 'a:a', '1' -- It creates an attribute a under the a family with value 1
-  		put 'UsernameInput', 'key1', 'b:b', '2' -- It creates an attribute b under the b family with value 2
-
-  		A correct call would be this: yarn jar myJarFile.jar Projection jonathan.nebot_ProjectionInput jonathan.nebot_Projection_Output a -- It projects a
-  		The result (stored in UsernameOutput) would be: 'key1', 'a:a', '1' -- b is not there
-  		Notice that in this case providing family name is optional.
-
-  	2) 	However, assume the following case where HBase table is created as follows:
-  		create 'UsernameInputF', 'cf1', 'cf2' -- It contains two families: cf1 and cf2
-  		put 'UsernameInputF', 'key1', 'cf1:a', '1' -- It creates an attribute a under the cf1 family with value 1
-  		put 'UsernameInputF', 'key1', 'cf2:b', '2' -- It creates an attribute b under the cf2 family with value 2
-
-  		In this case, a correct call would require both family and column defined, as follows:
-  		yarn jar myJarFile.jar Projection UsernameInputF UsernameOutputF cf1:a -- It projects cf1:a
-  		The result (stored in UsernameOutputF) would be: 'key1', 'cf1:a', '1' -- cf2:b is not there
-  		Notice that in this case providing family name is mandatory.
-
-  */
 
   public static void main(String[] args) throws Exception {
     if (args.length != 4) {

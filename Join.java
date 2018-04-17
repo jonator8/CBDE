@@ -40,33 +40,6 @@ public class Join extends Configured implements Tool {
   private static String outputTable;
 
   //=================================================================== Main
-  /*
-      Explanation: Assume we want to do the cartesian product of tuples stored in two HBase tables (inputTable1 and inputTable2).
-
-      First, the main method checks the call parameters. There must be 4:
-      1.- First (external) HBase input table where to read data from (it must have been created beforehand, as we will see later)
-  	2.- Second (internal) HBase input table where to read data from (it must have been created beforehand, as we will see later)
-      4.- The HBase output table (it will be created, as we will see later)
-      5.- A random value
-
-      Assume a call like this:
-
-      yarn jar myJarFile.jar CartesianProduct Username_InputTable1 Username_InputTable2 Username_OutputTable 10
-
-      Assume now the following HBase tables:
-
-  	- The Username_InputTable1 HBase table containing the following data:
-  		'key1', 'AAA'
-  		'key2', 'BBB'
-
-  	- The Username_InputTable2 HBase table containing the following data:
-  		'key3', 'CCC'
-  		'key4', 'DDD'
-
-      As we will see later in the map and reduce methods, what we want to do is to join all tuples from Username_InputTable1 with all the tuples from Username_InputTable2 (but those from the same table must not be joined).
-      Next, the main calls the checkIOTables method, which connects with HBase and handles it.
-      Finally, the MapReduce task is run (and the run method is called).
-  */
 
   public static void main(String[] args) throws Exception {
     if (args.length != 5) {
