@@ -69,8 +69,8 @@ public class Join extends Configured implements Tool {
   */
 
   public static void main(String[] args) throws Exception {
-    if (args.length < 4) {
-      System.err.println("Parameters missing: 'inputTableEXT inputTableINT outputTable hashValue'");
+    if (args.length != 5) {
+      System.err.println("Parameters missing: 'leftInputTable rightInputTable outputTable leftAttribute rightAttribute'");
       System.exit(1);
     }
     inputTable1 = args[0];
@@ -79,7 +79,7 @@ public class Join extends Configured implements Tool {
 
     int tablesRight = checkIOTables(args);
     if (tablesRight == 0) {
-      int ret = ToolRunner.run(new CartesianProduct(), args);
+      int ret = ToolRunner.run(new Join(), args);
       System.exit(ret);
     } else {
       System.exit(tablesRight);
@@ -99,21 +99,19 @@ public class Join extends Configured implements Tool {
     /* With an HBase administrator we check if the input tables exist.
        You can modify this bit and create it here if you want. */
     if (hba.tableExists(inputTable1)) {
-      //System.err.println("Input table 1 does not exist");
-      //return 2;
       hba.disableTable(inputTable1);
       hba.deleteTable(inputTable1);
     }
     if (hba.tableExists(inputTable2)) {
-      //System.err.println("Input table 2 does not exist");
-      //return 2;
       hba.disableTable(inputTable2);
       hba.deleteTable(inputTable2);
     }
     HTableDescriptor htdInput1 = new HTableDescriptor(inputTable1.getBytes());
     HTableDescriptor htdInput2 = new HTableDescriptor(inputTable2.getBytes());
-    htdInput1.addFamily(new HColumnDescriptor("f1"));
-    htdInput2.addFamily(new HColumnDescriptor("f2"));
+    htdInput1.addFamily(new HColumnDescriptor("a"));
+    htdInput1.addFamily(new HColumnDescriptor("b"));
+    htdInput2.addFamily(new HColumnDescriptor("c"));
+    htdInput2.addFamily(new HColumnDescriptor("d"));
     hba.createTable(htdInput1);
     hba.createTable(htdInput2);
 
@@ -122,8 +120,6 @@ public class Join extends Configured implements Tool {
        Normally, MapReduce tasks attack an existing table (not created on the fly) and
        they store the result in a new table. */
     if (hba.tableExists(outputTable)) {
-      //System.err.println("Output table already exists");
-      //return 3;
       hba.disableTable(inputTable2);
       hba.deleteTable(inputTable2);
     }
@@ -137,17 +133,21 @@ public class Join extends Configured implements Tool {
 
       //Data inputTable1
       Put put = new Put(Bytes.toBytes("key1"));
-      put.add(Bytes.toBytes("f1"), Bytes.toBytes("value"), Bytes.toBytes("AAA"));
+      put.add(Bytes.toBytes("a"), Bytes.toBytes("a"), Bytes.toBytes("1"));
+      put.add(Bytes.toBytes("b"), Bytes.toBytes("b"), Bytes.toBytes("2"));
       input1.put(put);
       put = new Put(Bytes.toBytes("key2"));
-      put.add(Bytes.toBytes("f1"), Bytes.toBytes("value"), Bytes.toBytes("BBB"));
+      put.add(Bytes.toBytes("a"), Bytes.toBytes("a"), Bytes.toBytes("1"));
+      put.add(Bytes.toBytes("b"), Bytes.toBytes("b"), Bytes.toBytes("2"));
       input1.put(put);
       //Data inputTable2
       put = new Put(Bytes.toBytes("key3"));
-      put.add(Bytes.toBytes("f2"), Bytes.toBytes("value"), Bytes.toBytes("CCC"));
+      put.add(Bytes.toBytes("c"), Bytes.toBytes("c"), Bytes.toBytes("2"));
+      put.add(Bytes.toBytes("d"), Bytes.toBytes("d"), Bytes.toBytes("3"));
       input2.put(put);
       put = new Put(Bytes.toBytes("key4"));
-      put.add(Bytes.toBytes("f2"), Bytes.toBytes("value"), Bytes.toBytes("DDD"));
+      put.add(Bytes.toBytes("c"), Bytes.toBytes("c"), Bytes.toBytes("3"));
+      put.add(Bytes.toBytes("d"), Bytes.toBytes("d"), Bytes.toBytes("4"));
       input2.put(put);
 
       //If you do it through the HBase Shell, this is equivalent to:
