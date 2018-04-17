@@ -229,9 +229,12 @@ public class Join extends Configured implements Tool {
      - Context context: The object where to store all the key-values generated (i.e., the map output) */
 
   public static class Mapper extends TableMapper<Text, Text> {
+    
+    public static final int HASH = 10;
 
-    public void map(ImmutableBytesWritable rowMetadata, Result values, Context context)
-        throws IOException, InterruptedException {
+    public void map(ImmutableBytesWritable rowMetadata, Result values, Context context) throws IOException, InterruptedException {
+
+      int i;
 
       String[] leftTable = context.getConfiguration().getStrings("LeftTable", "Default");
       String[] rightTable = context.getConfiguration().getStrings("RightTable", "Default");
@@ -258,12 +261,12 @@ public class Join extends Configured implements Tool {
       if (tableName.equalsIgnoreCase(leftTable[0])) {
         //This writes a key-value pair to the context object
         //If it is external, it gets as key a hash value and it is written only once in the context object
-        context.write(new Text(Integer.toString(Double.valueOf(Math.random() * hash).intValue())), new Text(tuple));
+        context.write(new Text(Integer.toString(Double.valueOf(Math.random() * HASH).intValue())), new Text(tuple));
       }
       //Is this key internal (e.g., from the internal table)?
       //If it is internal, it is written to the context object many times, each time having as key one of the potential hash values
       if (tableName.equalsIgnoreCase(rightTable[0])) {
-        for (i = 0; i < hash; i++) {
+        for (i = 0; i < HASH; i++) {
           context.write(new Text(Integer.toString(i)), new Text(tuple));
         }
       }
@@ -304,13 +307,13 @@ public class Join extends Configured implements Tool {
         // we extract the information from the tuple as we packed it in the mapper
         eTuple = eTableTuple.split("#")[1];
         eAttributes = eTuple.split(";");
-        if (eTableTuple.startsWith(external[0])) {
+        if (eTableTuple.startsWith(leftTable[0])) {
           for (j = 0; j < tuples.size(); j++) {
             iTableTuple = tuples.get(j);
             // we extract the information from the tuple as we packed it in the mapper
             iTuple = iTableTuple.split("#")[1];
             iAttributes = iTuple.split(";");
-            if (iTableTuple.startsWith(internal[0])) {
+            if (iTableTuple.startsWith(rightTable[0])) {
               // Create a key for the output
               outputKey = eAttributes[0] + "_" + iAttributes[0];
               // Create a tuple for the output table
